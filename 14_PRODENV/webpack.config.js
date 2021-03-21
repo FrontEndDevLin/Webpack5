@@ -1,10 +1,11 @@
-// 开发环境综合配置
-let path = require("path");
-let HtmlWebpackPlugin = require("html-webpack-plugin");
-let MiniCssExtractPlugin = require("mini-css-extract-plugin");
-// let OptimizeCssAssetsWebpackPlugin = require("optimize-css-assets-webpack-plugin");
+// 生产环境综合配置
 
-let commonCssConfig = [
+let path = require("path");
+let MiniCssExtractPlugin = require("mini-css-extract-plugin");
+let HtmlWebpackPlugin = require("html-webpack-plugin");
+let OptimizeCssAssetsWebpackPlugin = require("optimize-css-assets-webpack-plugin");
+
+let commonCssLoaders = [
   {
     loader: MiniCssExtractPlugin.loader,
     options: {
@@ -12,7 +13,7 @@ let commonCssConfig = [
     }
   },
   "css-loader",
-  // css兼容性处理
+  // css兼容
   {
     loader: "postcss-loader",
     options: {
@@ -39,35 +40,38 @@ module.exports = {
     rules: [
       {
         test: /\.css$/,
-        use: commonCssConfig
+        use: commonCssLoaders
       },
       {
         test: /\.less$/,
         use: [
-          ...commonCssConfig,
-          // "style-loader",
-          // "css-loader",
+          ...commonCssLoaders,
           "less-loader"
         ]
       },
       {
-        test: /\.(jpg|png|jpeg|gif)$/,
+        test: /\.(png|jpg|jpeg|gif)$/,
         loader: "url-loader",
         options: {
           limit: 8 * 1024,
-          // 转为commonjs规范，否则html引入错误
           esModule: false,
           name: "[hash:10].[ext]",
-          outputPath: "./img/",
-          // publicPath: './img/'
+          outputPath: "./img"
         }
       },
       {
         test: /\.html$/,
-        loader: "html-withimg-loader",
-        // 受url-loader的options.limit参数影响
+        loader: "html-withimg-loader"
       },
-      // js兼容性处理
+      {
+        test: /\.(eot|svg|ttf|woff)$/,
+        loader: "file-loader",
+        options: {
+          name: "[name].[ext]",
+          outputPath: "./font"
+        }
+      },
+      // js兼容
       {
         test: /\.js$/,
         exclude: /node_modules/,
@@ -79,11 +83,9 @@ module.exports = {
               {
                 // 按需加载
                 useBuiltIns: "usage",
-                // 指定core-js版本
                 corejs: {
                   version: 3
                 },
-                // 指定兼容到哪个版本的浏览器
                 targets: {
                   chrome: "60",
                   firefox: "60",
@@ -95,44 +97,37 @@ module.exports = {
             ]
           ]
         }
-      },
-      // 打包其他资源
-      {
-        test: /\.(eot|svg|ttf|woff)$/,
-        loader: "file-loader",
-        options: {
-          name: "[name].[ext]",
-          // esModule: false,
-          outputPath: "./static/",
-          // publicPath: "./static/"
-        }
       }
     ]
   },
 
   plugins: [
+    new HtmlWebpackPlugin({
+      template: "./src/index.html",
+      inject: "body",
+      minify: {
+        // 去空格
+        collapseWhitespace: true,
+        // 去注释
+        removeComments: true
+      }
+    }),
 
-    // 将生成的css自动引入到html中
     new MiniCssExtractPlugin({
       filename: "./css/app.css"
     }),
 
     // 压缩css 这一步会出现warning
-    // new OptimizeCssAssetsWebpackPlugin(),
+    new OptimizeCssAssetsWebpackPlugin(),
 
-    new HtmlWebpackPlugin({
-      template: "./src/index.html",
-      inject: "body"
-    }),
-
+    
   ],
 
-  mode: "development",
+  mode: "production",
 
   devServer: {
     contentBase: path.resolve(__dirname, "dist"),
-    // 启动gzip压缩
-    compress: true,
+    compress: true, // 启用gzip压缩
     port: 4000,
     open: true
   }
